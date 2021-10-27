@@ -17,7 +17,7 @@ void lqtL_qvariant_custom_qtgui (lua_State *L);
 QList<QByteArray> lqtL_getStringList(lua_State *L, int i);
 void lqtL_pushStringList(lua_State *L, const QList<QByteArray> &table);
 
-QGenericArgument lqtL_getGenericArgument(lua_State *L, int i);
+QGenericArgument lqtL_getGenericArgument(lua_State *L, int i, int ty = 0);
 bool lqtL_isGenericArgument(lua_State *L, int i);
 
 // QWebEngineCallback type handlers

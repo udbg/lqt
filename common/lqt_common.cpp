@@ -67,15 +67,7 @@ static void lqtL_getreftable (lua_State *L) {
     }
 }
 
-static void lqtL_getrefclasstable(lua_State *L) {
-    lua_getfield(L, LUA_REGISTRYINDEX, LQT_REF_CLASS);
-    if (lua_isnil(L, -1)) {
-        lua_pop(L, 1);
-        lua_newtable(L);
-        lua_pushvalue(L, -1);
-        lua_setfield(L, LUA_REGISTRYINDEX, LQT_REF_CLASS);
-    }
-}
+void lqtL_getrefclasstable(lua_State *L);
 
 static int lqtL_callfunc(lua_State *L, int idx, const char *name, bool once_only) {
 
@@ -629,7 +621,64 @@ void lqtL_register (lua_State *L, const void *p, const char *name) { // (+0)
     }
 }
 
+#ifdef MODULE_qtcore
+typedef std::function<void()> GuiClosure;
+
+class GuiEvent: public QEvent
+{
+public:
+    GuiEvent(GuiClosure&& closure): QEvent(QEvent::User), closure(closure) {}
+
+    GuiClosure closure;
+};
+
+class ThreadEvent : public QObject
+{
+public:
+    explicit ThreadEvent(): QObject(nullptr) {}
+
+    static ThreadEvent *instance()
+    {
+        static ThreadEvent *g_event;
+        if (!g_event)
+        {
+            g_event = new ThreadEvent;
+            g_event->moveToThread(QCoreApplication::instance()->thread());
+        }
+        return g_event;
+    }
+
+    static void runInMain(GuiClosure closure)
+    {
+        QCoreApplication::postEvent(instance(), new GuiEvent(std::move(closure)));
+    }
+
+protected:
+    bool event(QEvent *e) override
+    {
+        switch (e->type())
+        {
+        case QEvent::User:
+        {
+            if (auto g = dynamic_cast<GuiEvent*>(e))
+                g->closure();
+            break;
+        }
+        default: break;
+        }
+        return QObject::event(e);
+    }
+};
+
 void lqtL_unregister (lua_State *L, const void *p, const char *name) {
+    if (!lqtL_isMainThread())
+    {
+        ThreadEvent::runInMain([=]()
+        {
+            lqtL_unregister(L, p, name);
+        });
+        return;
+    }
     if (name != NULL) {
 #if VERBOSE_BUILD
         printf("lqtL_unregister %p %s\n", p, name);
@@ -668,6 +717,7 @@ void lqtL_unregister (lua_State *L, const void *p, const char *name) {
     lua_settable(L, -3); // (1)
     lua_pop(L, 1); // (0)
 }
+#endif
 
 #include "lqt_event.inl"
 
@@ -917,19 +967,6 @@ static int lqtL_errfunc(lua_State *L) {
 
     lqtL_pushtrace(L, lua_tostring(L, 1), 3);
     return 1;
-}
-
-int lqtL_setErrorHandler(lua_State *L) {
-
-    if(!lua_isfunction(L, 1))
-        luaL_typerror(L, 1, "function");
-
-    lqtL_getrefclasstable(L);
-    lua_pushvalue(L, 1);
-    lua_setfield(L, -2, "errorHandler");
-    lua_pop(L, 1);
-
-    return 0;
 }
 
 int lqtL_pcall(lua_State *L, int narg, int nres, int err) {

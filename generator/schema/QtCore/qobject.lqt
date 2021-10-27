@@ -278,7 +278,9 @@ private:
 
 // #ifndef QT_NO_USERDATA
 class Q_CORE_EXPORT QObjectUserData {
+    Q_DISABLE_COPY(QObjectUserData)
 public:
+    QObjectUserData() = default;
     virtual ~QObjectUserData();
 };
 // #endif

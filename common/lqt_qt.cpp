@@ -95,6 +95,23 @@ static int lqtL_children(lua_State *L) {
     return 1;
 }
 
+static int lqtL_namedChildren(lua_State *L) {
+    QObject* self = static_cast<QObject*>(lqtL_toudata(L, 1, "QObject*"));
+    if (self == NULL)
+        return luaL_argerror(L, 1, "expecting QObject*");
+    const QObjectList & children = self->findChildren<QObject*>();
+
+    lua_newtable(L);
+    for (int i=0; i < children.count(); i++) {
+        QObject * object = children[i];
+        QString name = object->objectName();
+        if (!name.isEmpty() && lqtL_pushqobject(L, object)) {
+            lua_setfield(L, -2, qPrintable(name));
+        }
+    }
+    return 1;
+}
+
 static int lqtL_connect(lua_State *L) {
     static int methodId = 0;
 
@@ -175,7 +192,180 @@ static int lqtL_metaObject(lua_State *L) {
 	return 1;
 }
 
-int lqtL_setErrorHandler(lua_State *L);
+void lqtL_getrefclasstable(lua_State *L) {
+    lua_getfield(L, LUA_REGISTRYINDEX, LQT_REF_CLASS);
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        lua_newtable(L);
+        lua_pushvalue(L, -1);
+        lua_setfield(L, LUA_REGISTRYINDEX, LQT_REF_CLASS);
+    }
+}
+
+int lqtL_setErrorHandler(lua_State *L) {
+
+    if(!lua_isfunction(L, 1))
+        luaL_typerror(L, 1, "function");
+
+    lqtL_getrefclasstable(L);
+    lua_pushvalue(L, 1);
+    lua_setfield(L, -2, "errorHandler");
+    lua_pop(L, 1);
+
+    return 0;
+}
+
+static int lqtL___ptr(lua_State *L) {
+    if (auto self = static_cast<QObject*>(lqtL_toudata(L, 1, "QObject*")))
+    {
+        lua_pushinteger(L, lua_Integer(self));
+        return 1;
+    }
+    return 0;
+}
+
+static int lqtL_cast(lua_State *L) {
+    if (auto self = static_cast<QObject*>(lqtL_toudata(L, 1, "QObject*")))
+    {
+        return lqtL_pushqobject(L, self);
+    }
+    return 0;
+}
+
+static int lqt_metaMethod_invoke(lua_State *L) {
+    int oldtop = lua_gettop(L);
+    QMetaMethod* self = static_cast<QMetaMethod*>(lqtL_toudata(L, 1, "QMetaMethod*"));
+    lqtL_selfcheck(L, self, "QMetaMethod");
+
+    size_t data[10] = { 0 };
+    QGenericReturnArgument retarg(self->typeName(), data);
+    switch (self->returnType())
+    {
+#define INIT_ARG_CASE(T) case QMetaType::T: \
+        { \
+            T val; \
+            memcpy(data, &val, sizeof(val)); \
+            break; \
+        } \
+
+    INIT_ARG_CASE(QByteArray)
+    INIT_ARG_CASE(QString)
+    INIT_ARG_CASE(QStringList)
+    INIT_ARG_CASE(QVariantList)
+    INIT_ARG_CASE(QVariantMap)
+    };
+
+    QObject* arg1 = static_cast<QObject*>(lqtL_toudata(L, 2, "QObject*"));
+    Qt::ConnectionType arg2 = static_cast<Qt::ConnectionType>(lqtL_toenum(L, 3, "Qt.ConnectionType"));
+    QGenericArgument arg3 = lua_isnoneornil(L, 4) ? static_cast< QGenericArgument >(QGenericArgument(NULL)) : lqtL_getGenericArgument(L, 4, self->parameterType(0));
+    QGenericArgument arg4 = lua_isnoneornil(L, 5) ? static_cast< QGenericArgument >(QGenericArgument()) : lqtL_getGenericArgument(L, 5, self->parameterType(1));
+    QGenericArgument arg5 = lua_isnoneornil(L, 6) ? static_cast< QGenericArgument >(QGenericArgument()) : lqtL_getGenericArgument(L, 6, self->parameterType(2));
+    QGenericArgument arg6 = lua_isnoneornil(L, 7) ? static_cast< QGenericArgument >(QGenericArgument()) : lqtL_getGenericArgument(L, 7, self->parameterType(3));
+    QGenericArgument arg7 = lua_isnoneornil(L, 8) ? static_cast< QGenericArgument >(QGenericArgument()) : lqtL_getGenericArgument(L, 8, self->parameterType(4));
+    QGenericArgument arg8 = lua_isnoneornil(L, 9) ? static_cast< QGenericArgument >(QGenericArgument()) : lqtL_getGenericArgument(L, 9, self->parameterType(5));
+    QGenericArgument arg9 = lua_isnoneornil(L, 10) ? static_cast< QGenericArgument >(QGenericArgument()) : lqtL_getGenericArgument(L, 10, self->parameterType(6));
+    QGenericArgument arg10 = lua_isnoneornil(L, 11) ? static_cast< QGenericArgument >(QGenericArgument()) : lqtL_getGenericArgument(L, 11, self->parameterType(7));
+    QGenericArgument arg11 = lua_isnoneornil(L, 12) ? static_cast< QGenericArgument >(QGenericArgument()) : lqtL_getGenericArgument(L, 12, self->parameterType(8));
+    QGenericArgument arg12 = lua_isnoneornil(L, 13) ? static_cast< QGenericArgument >(QGenericArgument()) : lqtL_getGenericArgument(L, 13, self->parameterType(9));
+    bool ret = self->invoke(arg1, arg2, retarg, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
+    if (!ret) return 0;
+
+    switch (self->returnType())
+    {
+    case QMetaType::Int:
+        lua_pushinteger(L, lua_Integer(*(int*)data));
+        break;
+    case QMetaType::UInt:
+        lua_pushinteger(L, lua_Integer(*(uint*)data));
+        break;
+    case QMetaType::Long:
+        lua_pushinteger(L, lua_Integer(*(long*)data));
+        break;
+    case QMetaType::ULong:
+        lua_pushinteger(L, lua_Integer(*(ulong*)data));
+        break;
+    case QMetaType::LongLong:
+        lua_pushinteger(L, lua_Integer(*(qlonglong*)data));
+        break;
+    case QMetaType::ULongLong:
+        lua_pushinteger(L, lua_Integer(*(qulonglong*)data));
+        break;
+    case QMetaType::Bool:
+        lua_pushboolean(L, *(bool*)data);
+        break;
+    case QMetaType::Float:
+        lua_pushnumber(L, lua_Number(*(float*)data));
+        break;
+    case QMetaType::Double:
+        lua_pushnumber(L, lua_Number(*(double*)data));
+        break;
+    case QMetaType::Short:
+        lua_pushinteger(L, lua_Integer(*(short*)data));
+        break;
+    case QMetaType::UShort:
+        lua_pushinteger(L, lua_Integer(*(ushort*)data));
+        break;
+    case QMetaType::Char:
+        lua_pushinteger(L, lua_Integer(*(char*)data));
+        break;
+    case QMetaType::UChar:
+        lua_pushinteger(L, lua_Integer(*(uchar*)data));
+        break;
+
+#define ARG_CASE(T) case QMetaType::T: \
+        lqtL_pushudata(L, new T(std::move(*(T*)data)), #T"*"); \
+        break;
+
+    ARG_CASE(QString)
+    ARG_CASE(QStringList)
+    ARG_CASE(QByteArray)
+
+    ARG_CASE(QVariant)
+    ARG_CASE(QVariantList)
+    ARG_CASE(QVariantMap)
+
+    ARG_CASE(QDate)
+    ARG_CASE(QTime)
+    ARG_CASE(QDateTime)
+
+    ARG_CASE(QSize)
+    ARG_CASE(QRect)
+    ARG_CASE(QLine)
+    ARG_CASE(QPoint)
+    ARG_CASE(QSizeF)
+    ARG_CASE(QRectF)
+    ARG_CASE(QLineF)
+    ARG_CASE(QPointF)
+
+    // ARG_CASE(QFont)
+    // ARG_CASE(QPixmap)
+    // ARG_CASE(QBrush)
+    // ARG_CASE(QColor)
+    // ARG_CASE(QPalette)
+    // ARG_CASE(QIcon)
+    // ARG_CASE(QImage)
+    // ARG_CASE(QPolygon)
+    // ARG_CASE(QRegion)
+    // ARG_CASE(QBitmap)
+    // ARG_CASE(QCursor)
+    // ARG_CASE(QKeySequence)
+    // ARG_CASE(QPen)
+    // ARG_CASE(QTextLength)
+    // ARG_CASE(QTextFormat)
+    // ARG_CASE(QMatrix)
+    // ARG_CASE(QTransform)
+    // ARG_CASE(QMatrix4x4)
+    // ARG_CASE(QVector2D)
+    // ARG_CASE(QVector3D)
+    // ARG_CASE(QVector4D)
+    // ARG_CASE(QQuaternion)
+    // ARG_CASE(QPolygonF)
+
+    default:
+        lua_pushnil(L);
+    }
+    return 1;
+}
 
 void lqtL_qobject_custom (lua_State *L) {
     lua_getfield(L, LUA_REGISTRYINDEX, "QObject*");
@@ -187,12 +377,24 @@ void lqtL_qobject_custom (lua_State *L) {
     lua_pushcfunction(L, lqtL_methods);
     lua_rawset(L, qobject);
 
+    lua_pushstring(L, "__ptr");
+    lua_pushcfunction(L, lqtL___ptr);
+    lua_rawset(L, qobject);
+
+    lua_pushstring(L, "cast");
+    lua_pushcfunction(L, lqtL_cast);
+    lua_rawset(L, qobject);
+
     lua_pushstring(L, "findChild");
     lua_pushcfunction(L, lqtL_findchild);
     lua_rawset(L, qobject);
 
     lua_pushstring(L, "children");
     lua_pushcfunction(L, lqtL_children);
+    lua_rawset(L, qobject);
+
+    lua_pushstring(L, "namedChildren");
+    lua_pushcfunction(L, lqtL_namedChildren);
     lua_rawset(L, qobject);
 
     lua_pushstring(L, "connect");
@@ -210,6 +412,13 @@ void lqtL_qobject_custom (lua_State *L) {
     // set QtCore.setErrorHandler function
     lua_pushcfunction(L, lqtL_setErrorHandler);
     lua_setfield(L, -4, "setErrorHandler");
+
+    lua_getfield(L, LUA_REGISTRYINDEX, "QMetaMethod*");
+    int qmetamethod = lua_gettop(L);
+
+    lua_pushstring(L, "invoke2");
+    lua_pushcfunction(L, lqt_metaMethod_invoke);
+    lua_rawset(L, qmetamethod);
 }
 
 

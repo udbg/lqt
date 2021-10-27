@@ -174,7 +174,19 @@ static QGenericArgument lqt_convertUserdata(lua_State *L, int i, const char *typ
     return QGenericArgument(type, &pointers[i]);
 }
 
-QGenericArgument lqtL_getGenericArgument(lua_State *L, int i) {
+static const char *lqt_typename(int ty, const char *def)
+{
+    switch (ty)
+    {
+    case QMetaType::Int: return "int";
+    case QMetaType::UInt: return "uint";
+    case QMetaType::LongLong: return "qlonglong";
+    case QMetaType::ULongLong: return "qulonglong";
+    default: return def;
+    }
+}
+
+QGenericArgument lqtL_getGenericArgument(lua_State *L, int i, int ty) {
 
     if(i >= MAX_ARGUMENTS)
         luaL_error(L, "Argument index %d out of range %d !", i, MAX_ARGUMENTS);
@@ -197,8 +209,18 @@ QGenericArgument lqtL_getGenericArgument(lua_State *L, int i) {
 
         case LUA_TNUMBER: {
             static lua_Number numbers[MAX_ARGUMENTS];
-            numbers[i] = lua_tonumber(L, i);
-            return QGenericArgument("double", &numbers[i]);
+            static lua_Integer integers[MAX_ARGUMENTS];
+
+            if (lua_isinteger(L, i))
+            {
+                integers[i] = lua_tointeger(L, i);
+                return QGenericArgument(lqt_typename(ty, "int"), &integers[i]);
+            }
+            else
+            {
+                numbers[i] = lua_tonumber(L, i);
+                return QGenericArgument(lqt_typename(ty, "double"), &numbers[i]);
+            }
         }
 
         case LUA_TSTRING: {

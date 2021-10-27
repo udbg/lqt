@@ -203,11 +203,14 @@ int lqtL_qvariant_value_custom(lua_State *L, int index, bool convert_to) {
 		case QVariant::Invalid: lua_pushnil(L); return 1;
 		/* basic types */
 		case QVariant::Bool: lua_pushboolean(L, self->toBool()); return 1;
-		case QVariant::Double: lua_pushnumber(L, self->toDouble()); return 1;
-		case QVariant::Int: lua_pushinteger(L, self->toInt()); return 1;
-		case QVariant::UInt: lua_pushinteger(L, self->toUInt()); return 1;
-		case QVariant::LongLong: lua_pushnumber(L, self->toLongLong()); return 1;
-		case QVariant::ULongLong: lua_pushnumber(L, self->toULongLong()); return 1;
+		case QVariant::Double:
+			lua_pushnumber(L, self->toDouble()); return 1;
+		case QVariant::Int:
+		case QVariant::LongLong:
+			lua_pushinteger(L, self->toLongLong()); return 1;
+		case QVariant::UInt:
+		case QVariant::ULongLong:
+			lua_pushinteger(L, self->toULongLong()); return 1;
 		case QVariant::ByteArray: {
 			const QByteArray &ba = self->toByteArray();
 			lua_pushlstring(L, ba.data(), ba.size());
@@ -313,11 +316,7 @@ static int lqtL_qvariant_value(lua_State *L) {
     return lqtL_qvariant_value_custom(L, 1, true);
 }
 
-#ifndef MODULE_qtgui
 void lqtL_qvariant_custom(lua_State *L)
-#else
-void lqtL_qvariant_custom_qtgui(lua_State *L)
-#endif
 {
 	lua_getfield(L, LUA_REGISTRYINDEX, "QVariant*");
     if (!lua_istable(L, -1))
@@ -333,3 +332,7 @@ void lqtL_qvariant_custom_qtgui(lua_State *L)
 	lua_rawset(L, qvariant);
 }
 
+void lqtL_qvariant_custom_qtgui(lua_State *L)
+{
+	return lqtL_qvariant_custom(L);
+}

@@ -789,6 +789,7 @@ function print_wrappers()
 			if VERBOSE_BUILD then
 				out = out .. string.format('  printf("delete(C++) %s\\n");\n', c.xarg.fullname);
 			end
+			-- TODO: delete QObject* in main thread
 			out = out .. '  if (p) delete p;\n'
 		end
 		out = out .. '  lqtL_eraseudata(L, 1, "'..lua_name..'*");\n'
@@ -1006,7 +1007,7 @@ private:
 		overrides = shellname..'::lqtAddOverride'
 	end
 
-	print_meta('extern "C" LQT_EXPORT int luaopen_'..n..' (lua_State *L) {')
+	print_meta('extern "C" int luaopen_'..n..' (lua_State *L) {')
 	print_meta('\tlqtL_createclass(L, "'
 		..lua_name..'*", lqt_metatable'
 		..c.xarg.id..', '..getters_setters..', '..overrides..', lqt_base'
@@ -1238,7 +1239,7 @@ end
 	type_list_f:close()
 
 	print_global_functions()
-	print_merged_build()
+	-- print_merged_build()
 	local fmeta = assert(io.open(module_name.._src..module_name..'_meta.cpp', 'w'))
 	local print_meta = function(...)
 		fmeta:write(...)
@@ -1248,7 +1249,7 @@ end
 	print_meta('#include "lqt_common.hpp"')
 	print_meta('#include "'..module_name..'_slot.hpp'..'"\n\n')
 	for _, p in ipairs(big_picture) do
-		print_meta('extern "C" LQT_EXPORT int luaopen_'..p..' (lua_State *);')
+		print_meta('extern "C" int luaopen_'..p..' (lua_State *);')
 	end
 	print_meta('void lqt_create_enums_'..module_name..' (lua_State *);')
 	print_meta('void lqt_create_globals_'..module_name..' (lua_State *);')

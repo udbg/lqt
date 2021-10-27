@@ -176,7 +176,7 @@ static bool lqtL_is_meta_dirty(lua_State *L
 }
 
 static QMetaObject& lqtL_get_metaobject (lua_State *L, int index) {
-
+    index = lua_absindex(L, index);
     lua_getfield(L, index, "__metaObject");
 
     QMetaObject* ret = nullptr;

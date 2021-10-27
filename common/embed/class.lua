@@ -23,6 +23,16 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 ***************************************************************************]]
 local QtCore
+local getuservalue = debug.getuservalue
+local string_find = string.find
+
+if _VERSION >= 'Lua 5.3' then
+	unpack = table.unpack
+	package.loaded.bit = {
+		band = function(a, b) return a & b end
+	}
+end
+
 ----------------------------------------------------------------------------------------------------
 -- call __static_init(static constructor)
 ----------------------------------------------------------------------------------------------------
@@ -126,7 +136,7 @@ local isInstanceOf = (function()
 		local __class
 		-- lqt class
 		if type(obj) == 'userdata' then
-			local env = debug.getfenv(obj)
+			local env = getuservalue(obj)
 			__class = rawget(env, '__class')
 		-- lua class
 		else
@@ -187,7 +197,7 @@ local function Class(name, super)
 
 	local function createInst(inst, classDef, ...)
 		if not classDef.__lua then
-			local env = debug.getfenv(inst)
+			local env = getuservalue(inst, 1)
 			env.new = errorNew
 			env.__class = classDef
 			env.__metaObject = classDef.__metaObject
@@ -221,7 +231,7 @@ local function Class(name, super)
 	--	2.lqt metadata fields
 	--	3.lqt class inherit check
 	local function isReversedKey(k)
-		return k:find('^__') or k:find('Lqt ') or k:find('%*$')
+		return string_find(k, '^__') or string_find(k, 'Lqt ') or string_find(k, '%*$')
 	end
 
 	return function(classDef)
@@ -296,7 +306,7 @@ local function Class(name, super)
 
 				v = super and super[k] or nil
 
-				if v == nil then
+				if v == nil and type(k) == 'string' then
 					if isReversedKey(k) then
 						return
 					end
@@ -306,7 +316,7 @@ local function Class(name, super)
 				return v
 			end,
 			__newindex = function(self,k,v)
-				if not __protected or isReversedKey(k) then
+				if not __protected or isReversedKey(k) or type(k) ~= 'string' then
 					rawset(self, k, v)
 				else
 					local ov = rawget(classDef, k)

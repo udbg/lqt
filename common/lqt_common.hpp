@@ -40,6 +40,12 @@ extern "C" {
 }
 #include <QtCore> // for QMetaObject
 
+// COMPAT for 5.4
+#define luaL_register(L,n,l) luaL_setfuncs(L, l, 0)
+#define luaL_typerror luaL_argerror
+#define lua_getfenv(L, i) lua_getuservalue(L, i)
+#define lua_setfenv(L, i) lua_setuservalue(L, i)
+
 //#include <iostream>
 
 //#define lqtL_register(L, p, n) ( (void)L, (void)p, (void)n )
@@ -63,12 +69,12 @@ extern "C" {
 #define LQT_TOPOSITIVE(L, i) (((i)<0)?(lua_gettop(L)+1+(i)):(i))
 
 // use standard pcall by default
-int lqtL_pcall(lua_State *L, int narg, int nres, int err);
+extern "C" LQT_EXPORT int lqtL_pcall(lua_State *L, int narg, int nres, int err);
 
 typedef int (*lqt_PCallPtr) (lua_State *L, int nargs, int nresults, int errfunc);
 
-void lqtL_register(lua_State *, const void *, const char *name);
-void lqtL_unregister(lua_State *, const void *, const char *name);
+extern "C" LQT_EXPORT void lqtL_register(lua_State *, const void *, const char *name);
+extern "C" LQT_EXPORT void lqtL_unregister(lua_State *, const void *, const char *name);
 
 //int& lqtL_tointref (lua_State *, int);
 
@@ -78,42 +84,42 @@ void lqtL_unregister(lua_State *, const void *, const char *name);
 
 //void lqtL_manageudata (lua_State *, int);
 //void lqtL_unmanageudata (lua_State *, int);
-void lqtL_pushudata (lua_State *, const void *, const char *);
-void lqtL_passudata (lua_State *, const void *, const char *);
-void lqtL_copyudata (lua_State *, const void *, const char *);
-void * lqtL_toudata (lua_State *, int, const char *);
-bool lqtL_testudata (lua_State *, int, const char *);
+extern "C" LQT_EXPORT void lqtL_pushudata (lua_State *, const void *, const char *);
+extern "C" LQT_EXPORT void lqtL_passudata (lua_State *, const void *, const char *);
+extern "C" LQT_EXPORT void lqtL_copyudata (lua_State *, const void *, const char *);
+extern "C" LQT_EXPORT void * lqtL_toudata (lua_State *, int, const char *);
+extern "C" LQT_EXPORT bool lqtL_testudata (lua_State *, int, const char *);
 //#define lqtL_checkudata(a...) luaL_checkudata(a)
-void * lqtL_checkudata (lua_State *, int, const char *);
-void lqtL_eraseudata (lua_State *, int, const char *);
+extern "C" LQT_EXPORT void * lqtL_checkudata (lua_State *, int, const char *);
+extern "C" LQT_EXPORT void lqtL_eraseudata (lua_State *, int, const char *);
 #define lqtL_isudata lqtL_testudata
 
 
-bool lqtL_canconvert(lua_State *L, int n, const char *to_type);
-void *lqtL_convert(lua_State *L, int n, const char *to_type);
+extern "C" LQT_EXPORT bool lqtL_canconvert(lua_State *L, int n, const char *to_type);
+extern "C" LQT_EXPORT void *lqtL_convert(lua_State *L, int n, const char *to_type);
 typedef bool  (*lqt_testfunc) (lua_State *L, int n);
 typedef void* (*lqt_convertfunc) (lua_State *L, int n);
 
 
-void lqtL_pushenum (lua_State *, int, const char *);
-bool lqtL_isenum (lua_State *, int, const char *);
-int lqtL_toenum (lua_State *, int, const char *);
+extern "C" LQT_EXPORT void lqtL_pushenum (lua_State *, int, const char *);
+extern "C" LQT_EXPORT bool lqtL_isenum (lua_State *, int, const char *);
+extern "C" LQT_EXPORT int lqtL_toenum (lua_State *, int, const char *);
 
-bool lqtL_isinteger (lua_State *, int);
-bool lqtL_isnumber (lua_State *, int);
-bool lqtL_isstring (lua_State *, int);
-bool lqtL_isboolean (lua_State *, int);
+extern "C" LQT_EXPORT bool lqtL_isinteger (lua_State *, int);
+extern "C" LQT_EXPORT bool lqtL_isnumber (lua_State *, int);
+extern "C" LQT_EXPORT bool lqtL_isstring (lua_State *, int);
+extern "C" LQT_EXPORT bool lqtL_isboolean (lua_State *, int);
 
-bool lqtL_missarg (lua_State *, int, int);
+extern "C" LQT_EXPORT bool lqtL_missarg (lua_State *, int, int);
 //int lqtL_baseindex (lua_State *, int, int);
 
 //int lqtL_gc (lua_State *);
 //int lqtL_index (lua_State *);
 //int lqtL_newindex (lua_State *);
 
-bool lqtL_ispointer(lua_State *, int);
-void *lqtL_topointer(lua_State *, int);
-void lqtL_pushpointer(lua_State *, void *);
+extern "C" LQT_EXPORT bool lqtL_ispointer(lua_State *, int);
+extern "C" LQT_EXPORT void *lqtL_topointer(lua_State *, int);
+extern "C" LQT_EXPORT void lqtL_pushpointer(lua_State *, void *);
 
 typedef struct {
     const char *name;
@@ -126,9 +132,9 @@ typedef struct {
     const char *name;
 } lqt_Enumlist;
 
-int lqtL_createenum (lua_State *L, lqt_Enum e[], const char *n);
-int lqtL_createenumlist (lua_State *, lqt_Enumlist[]);
-int lqtL_createglobals (lua_State *, luaL_Reg[]);
+extern "C" LQT_EXPORT int lqtL_createenum (lua_State *L, lqt_Enum e[], const char *n);
+extern "C" LQT_EXPORT int lqtL_createenumlist (lua_State *, lqt_Enumlist[]);
+extern "C" LQT_EXPORT int lqtL_createglobals (lua_State *, luaL_Reg[]);
 
 typedef struct {
     const char *basename;
@@ -141,41 +147,41 @@ typedef struct {
     const char * name;
 } lqt_Class;
 
-int lqtL_createclass (lua_State *, const char *, luaL_Reg *, luaL_Reg *, luaL_Reg *, lua_CFunction, lqt_Base *);
+extern "C" LQT_EXPORT int lqtL_createclass (lua_State *, const char *, luaL_Reg *, luaL_Reg *, luaL_Reg *, lua_CFunction, lqt_Base *);
 
 /* functions to get/push special types */
 
-bool * lqtL_toboolref (lua_State *, int);
-void * lqtL_getref (lua_State *, size_t, bool);
-int * lqtL_tointref (lua_State *, int);
-char ** lqtL_toarguments (lua_State *, int);
-void lqtL_pusharguments (lua_State *, char **);
+extern "C" LQT_EXPORT bool * lqtL_toboolref (lua_State *, int);
+extern "C" LQT_EXPORT void * lqtL_getref (lua_State *, size_t, bool);
+extern "C" LQT_EXPORT int * lqtL_tointref (lua_State *, int);
+extern "C" LQT_EXPORT char ** lqtL_toarguments (lua_State *, int);
+extern "C" LQT_EXPORT void lqtL_pusharguments (lua_State *, char **);
 
-int lqtL_getflags (lua_State *, int, const char *);
-void lqtL_pushflags (lua_State *, int, const char *);
+extern "C" LQT_EXPORT int lqtL_getflags (lua_State *, int, const char *);
+extern "C" LQT_EXPORT void lqtL_pushflags (lua_State *, int, const char *);
 #define lqtL_isflags(L, i) (lua_istable((L), (i)) || lqtL_isinteger((L), (i)))
 
-const QMetaObject& lqtL_qt_metaobject (lua_State *L
+extern "C" LQT_EXPORT const QMetaObject& lqtL_qt_metaobject (lua_State *L
     , const char *name
     , const QObject *object
     , const QMetaObject& super_data
 );
 
-int lqtL_getoverload (lua_State *L, int index, const char *name);
+extern "C" LQT_EXPORT int lqtL_getoverload (lua_State *L, int index, const char *name);
 
-const char * lqtL_source(lua_State *L, int idx);
+extern "C" LQT_EXPORT const char * lqtL_source(lua_State *L, int idx);
 
-bool lqtL_is_super(lua_State *L, int idx);
-void lqtL_register_super(lua_State *L);
+extern "C" LQT_EXPORT bool lqtL_is_super(lua_State *L, int idx);
+extern "C" LQT_EXPORT void lqtL_register_super(lua_State *L);
 
-void lqtL_pushudatatype(lua_State *L, int index);
-const char * lqtL_getarglist(lua_State *L);
+extern "C" LQT_EXPORT void lqtL_pushudatatype(lua_State *L, int index);
+extern "C" LQT_EXPORT const char * lqtL_getarglist(lua_State *L);
 
-void lqtL_selfcheck(lua_State *L, void *self, const char *name);
+extern "C" LQT_EXPORT void lqtL_selfcheck(lua_State *L, void *self, const char *name);
 
-bool lqtL_isMainThread();
+extern "C" LQT_EXPORT bool lqtL_isMainThread();
 
-const char *lqtL_typename(lua_State *L, int i);
+extern "C" LQT_EXPORT const char *lqtL_typename(lua_State *L, int i);
 
 #endif // __LQT_COMMON_HPP
 

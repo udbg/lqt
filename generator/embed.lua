@@ -3,6 +3,7 @@ if not path then
 end
 -- compile script to bytecode
 local compile = true
+loadstring = load
 
 local function log(fmt, ...)
 	print(string.format(fmt, ...))

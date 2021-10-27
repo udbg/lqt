@@ -36,6 +36,24 @@ print(string.gsub('{ABC}{HELL1_3234?xxx\nO}', '{([^}]+)}', {
 
 local osseparator = package.config:sub(1,1)
 
+function package.seeall(m)
+	setmetatable(m, {__index = _ENV})
+end
+
+function module(name, ...)
+	local mod = package.loaded[name]
+	if not mod then
+		mod = {}
+		_ENV[name] = mod
+		package.loaded[name] = mod
+		debug.setupvalue(debug.getinfo(2, 'f').func, 1, mod)
+		for _, see in ipairs({...}) do
+			see(mod)
+		end
+	end
+	return mod
+end
+
 local path = string.match(arg[0], '(.*'..osseparator..')[^%'..osseparator..']+') or ''
 if path == "" then
 	--- remove script name
