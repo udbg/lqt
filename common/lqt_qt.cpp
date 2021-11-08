@@ -95,18 +95,42 @@ static int lqtL_children(lua_State *L) {
     return 1;
 }
 
-static int lqtL_namedChildren(lua_State *L) {
+static int lqtL_findChildren(lua_State *L) {
     QObject* self = static_cast<QObject*>(lqtL_toudata(L, 1, "QObject*"));
     if (self == NULL)
         return luaL_argerror(L, 1, "expecting QObject*");
-    const QObjectList & children = self->findChildren<QObject*>();
 
-    lua_newtable(L);
-    for (int i=0; i < children.count(); i++) {
-        QObject * object = children[i];
-        QString name = object->objectName();
-        if (!name.isEmpty() && lqtL_pushqobject(L, object)) {
-            lua_setfield(L, -2, qPrintable(name));
+    auto option = Qt::FindChildOptions(lua_tointeger(L, 3));
+    QObjectList children;
+    if (auto re = static_cast<QRegularExpression*>(lqtL_toudata(L, 2, "QRegularExpression*")))
+    {
+        children = self->findChildren<QObject*>(*re, option);
+    }
+    else
+    {
+        children = self->findChildren<QObject*>(luaL_optstring(L, 2, ""), option);
+    }
+
+    // return as table
+    if (lua_toboolean(L, 4))
+    {
+        lua_newtable(L);
+        for (int i = 0; i < children.count(); i++) {
+            QObject * object = children[i];
+            QString name = object->objectName();
+            if (!name.isEmpty() && lqtL_pushqobject(L, object)) {
+                lua_setfield(L, -2, qPrintable(name));
+            }
+        }
+    }
+    else
+    {
+        lua_createtable(L, children.count(), 0);
+        for (int i = 0; i < children.count(); i++) {
+            QObject * object = children[i];
+            if (lqtL_pushqobject(L, object)) {
+                lua_rawseti(L, -2, i + 1);
+            }
         }
     }
     return 1;
@@ -393,8 +417,8 @@ void lqtL_qobject_custom (lua_State *L) {
     lua_pushcfunction(L, lqtL_children);
     lua_rawset(L, qobject);
 
-    lua_pushstring(L, "namedChildren");
-    lua_pushcfunction(L, lqtL_namedChildren);
+    lua_pushstring(L, "findChildren");
+    lua_pushcfunction(L, lqtL_findChildren);
     lua_rawset(L, qobject);
 
     lua_pushstring(L, "connect");
